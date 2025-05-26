@@ -1,6 +1,18 @@
 version: '3.8'
 
 services:
+  app:
+    build:
+      context: .
+      dockerfile: CornerShop/Dockerfile
+    ports:
+      - "8080:80"
+    depends_on:
+      - mongodb
+    environment:
+      - MongoDB__ConnectionString=mongodb://mongodb:27017
+      - MongoDB__DatabaseName=cornerShop
+
   mongodb:
     image: mongo:latest
     container_name: corner_shop_mongodb
