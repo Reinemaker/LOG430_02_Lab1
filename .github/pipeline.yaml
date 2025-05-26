@@ -1,4 +1,4 @@
-name: CI/CD Pipeline
+name: Corner Shop CI/CD Pipeline
 
 on:
   push:
@@ -13,6 +13,14 @@ jobs:
     name: Build and Test
     runs-on: ubuntu-latest
 
+    services:
+      mongodb:
+        image: mongo:latest
+        ports:
+          - 27017:27017
+        env:
+          MONGO_INITDB_DATABASE: cornerShop
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -24,41 +32,28 @@ jobs:
 
       - name: Restore dependencies
         run: dotnet restore
-
-      - name: Run Linting (Example with CSharpier)
-        run: |
-          dotnet tool install -g csharpier
-          csharpier check .
 
       - name: Build
         run: dotnet build --configuration Release
 
       - name: Run unit tests
         run: dotnet test --configuration Release --no-build
+        env:
+          MongoDB__ConnectionString: mongodb://localhost:27017
+          MongoDB__DatabaseName: cornerShop
 
-  publish-docker:
-    name: Publish to Docker Hub
+  build-and-push:
+    name: Build and Push Docker Image
     needs: build-and-test
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'  # Only run on main branch
+    if: github.ref == 'refs/heads/main'
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up .NET
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: '8.0.x'
-
-      - name: Restore dependencies
-        run: dotnet restore
-
-      - name: Build
-        run: dotnet build --configuration Release
-
-      - name: Publish
-        run: dotnet publish -c Release -o ./publish
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
       - name: Login to Docker Hub
         uses: docker/login-action@v3
@@ -74,6 +69,8 @@ jobs:
           push: true
           tags: |
             ${{ secrets.DOCKERHUB_USERNAME }}/corner-shop:latest
-            ${{ secrets.DOCKERHUB_USERNAME }}/corner-shop:${{ github.run_number }}
+            ${{ secrets.DOCKERHUB_USERNAME }}/corner-shop:${{ github.sha }}
+          cache-from: type=registry,ref=${{ secrets.DOCKERHUB_USERNAME }}/corner-shop:buildcache
+          cache-to: type=registry,ref=${{ secrets.DOCKERHUB_USERNAME }}/corner-shop:buildcache,mode=max
 
     
