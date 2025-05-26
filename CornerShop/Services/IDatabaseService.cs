@@ -14,4 +14,4 @@ public interface IDatabaseService
     Task<Sale> GetSaleById(string id);
     Task<bool> CancelSale(string saleId);
     Task<List<Product>> GetAllProducts();
-} 
+}

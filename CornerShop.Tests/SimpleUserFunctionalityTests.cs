@@ -34,7 +34,8 @@ public class SimpleUserFunctionalityTests
     {
         // Arrange
         var mockService = new Mock<IDatabaseService>();
-        var sale = new Sale {
+        var sale = new Sale
+        {
             Items = new List<SaleItem> {
                 new SaleItem { ProductName = "Apple", Quantity = 2, Price = 1.0m }
             },
@@ -82,4 +83,4 @@ public class SimpleUserFunctionalityTests
         Assert.Contains(result, p => p.Name == "Apple");
         Assert.Contains(result, p => p.Name == "Banana");
     }
-} 
+}

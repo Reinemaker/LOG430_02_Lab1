@@ -117,7 +117,7 @@ public class DatabaseService : IDatabaseService
 
     public async Task<List<Product>> SearchProducts(string searchTerm)
     {
-        var filter = Builders<Product>.Filter.Regex(p => p.Name, 
+        var filter = Builders<Product>.Filter.Regex(p => p.Name,
             new MongoDB.Bson.BsonRegularExpression(searchTerm, "i"));
         var cursor = await _products.FindAsync(filter);
         return await cursor.ToListAsync();
@@ -125,7 +125,7 @@ public class DatabaseService : IDatabaseService
 
     public async Task<Product?> GetProductByName(string name)
     {
-        var filter = Builders<Product>.Filter.Regex(p => p.Name, 
+        var filter = Builders<Product>.Filter.Regex(p => p.Name,
             new MongoDB.Bson.BsonRegularExpression($"^{name}$", "i"));
         var cursor = await _products.FindAsync(filter);
         return await cursor.FirstOrDefaultAsync();
@@ -193,4 +193,4 @@ public class DatabaseService : IDatabaseService
             Console.WriteLine();
         }
     }
-} 
+}

@@ -1,4 +1,4 @@
-﻿using CornerShop.Services;
+using CornerShop.Services;
 using CornerShop.Models;
 
 namespace CornerShop;
@@ -164,7 +164,7 @@ public class Program
     {
         Console.WriteLine("\nRecent Sales:");
         var recentSales = await _db.GetRecentSales();
-        
+
         if (!recentSales.Any())
         {
             Console.WriteLine("No recent sales found.");
@@ -201,7 +201,7 @@ public class Program
         Console.WriteLine($"\nAre you sure you want to cancel this sale?");
         Console.WriteLine($"Total: ${selectedSale.Total:F2}");
         Console.Write("Enter 'yes' to confirm: ");
-        
+
         if (Console.ReadLine()?.ToLower() != "yes")
         {
             Console.WriteLine("Cancellation aborted.");

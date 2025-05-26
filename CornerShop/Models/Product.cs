@@ -20,4 +20,4 @@ public class Product
 
     [BsonElement("stock")]
     public int StockQuantity { get; set; }
-} 
+}
