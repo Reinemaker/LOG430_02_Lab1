@@ -40,6 +40,7 @@ jobs:
     name: Publish to Docker Hub
     needs: build-and-test
     runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'  # Only run on main branch
 
     steps:
       - name: Checkout code
@@ -69,10 +70,10 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: MyWebApi/Dockerfile
+          file: CornerShop/Dockerfile
           push: true
           tags: |
-            reinemaker/mywebapi:latest
-            reinemaker/mywebapi:${{ github.run_number }}
+            ${{ secrets.DOCKERHUB_USERNAME }}/corner-shop:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/corner-shop:${{ github.run_number }}
 
     
