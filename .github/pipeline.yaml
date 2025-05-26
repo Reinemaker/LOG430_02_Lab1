@@ -9,8 +9,8 @@ on:
       - main
 
 jobs:
-  build-and-test:
-    name: Build and Test
+  lint-and-test:
+    name: Lint and Test
     runs-on: ubuntu-latest
 
     services:
@@ -30,21 +30,33 @@ jobs:
         with:
           dotnet-version: '8.0.x'
 
+      - name: Install dotnet-format
+        run: dotnet tool install -g dotnet-format
+
+      - name: Run dotnet-format
+        run: dotnet format --verify-no-changes
+
       - name: Restore dependencies
         run: dotnet restore
 
       - name: Build
-        run: dotnet build --configuration Release
+        run: dotnet build --configuration Release --no-restore
 
       - name: Run unit tests
-        run: dotnet test --configuration Release --no-build
+        run: dotnet test --configuration Release --no-build --collect:"XPlat Code Coverage"
         env:
           MongoDB__ConnectionString: mongodb://localhost:27017
           MongoDB__DatabaseName: cornerShop
 
+      - name: Upload coverage reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-reports
+          path: TestResults/
+
   build-and-push:
     name: Build and Push Docker Image
-    needs: build-and-test
+    needs: lint-and-test
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
 
@@ -61,15 +73,25 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_PASSWORD }}
 
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ secrets.DOCKERHUB_USERNAME }}/corner-shop
+          tags: |
+            type=raw,value=latest
+            type=sha,format=short
+            type=ref,event=branch
+            type=ref,event=tag
+
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
           context: .
           file: CornerShop/Dockerfile
           push: true
-          tags: |
-            ${{ secrets.DOCKERHUB_USERNAME }}/corner-shop:latest
-            ${{ secrets.DOCKERHUB_USERNAME }}/corner-shop:${{ github.sha }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=registry,ref=${{ secrets.DOCKERHUB_USERNAME }}/corner-shop:buildcache
           cache-to: type=registry,ref=${{ secrets.DOCKERHUB_USERNAME }}/corner-shop:buildcache,mode=max
 
