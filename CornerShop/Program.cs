@@ -5,13 +5,14 @@ namespace CornerShop;
 
 public class Program
 {
-    private static readonly DatabaseService _db = new("mongodb://localhost:27017", "cornerShop");
+    private static readonly IDatabaseService _db = new DatabaseService("mongodb://localhost:27017", "cornerShop");
+    private static readonly IProductService _productService = new ProductService(_db);
+    private static readonly ISaleService _saleService = new SaleService(_db, _productService);
 
     public static async Task Main(string[] args)
     {
         try
         {
-            // Initialize database with sample data
             await _db.InitializeDatabase();
         }
         catch (Exception ex)
@@ -22,39 +23,13 @@ public class Program
 
         while (true)
         {
-            Console.WriteLine("\nCorner Shop Management System");
-            Console.WriteLine("1. Search Products");
-            Console.WriteLine("2. Register Sale");
-            Console.WriteLine("3. Cancel Sale");
-            Console.WriteLine("4. Check Stock");
-            Console.WriteLine("5. Exit");
-            Console.Write("\nSelect an option: ");
-
+            DisplayMenu();
             var choice = Console.ReadLine();
             Console.WriteLine();
 
             try
             {
-                switch (choice)
-                {
-                    case "1":
-                        await SearchProducts();
-                        break;
-                    case "2":
-                        await RegisterSale();
-                        break;
-                    case "3":
-                        await CancelSale();
-                        break;
-                    case "4":
-                        await CheckStock();
-                        break;
-                    case "5":
-                        return;
-                    default:
-                        Console.WriteLine("Invalid option. Please try again.");
-                        break;
-                }
+                await ProcessUserChoice(choice);
             }
             catch (Exception ex)
             {
@@ -63,12 +38,53 @@ public class Program
         }
     }
 
+    private static void DisplayMenu()
+    {
+        Console.WriteLine("\nCorner Shop Management System");
+        Console.WriteLine("1. Search Products");
+        Console.WriteLine("2. Register Sale");
+        Console.WriteLine("3. Cancel Sale");
+        Console.WriteLine("4. Check Stock");
+        Console.WriteLine("5. Exit");
+        Console.Write("\nSelect an option: ");
+    }
+
+    private static async Task ProcessUserChoice(string? choice)
+    {
+        switch (choice)
+        {
+            case "1":
+                await SearchProducts();
+                break;
+            case "2":
+                await RegisterSale();
+                break;
+            case "3":
+                await CancelSale();
+                break;
+            case "4":
+                await CheckStock();
+                break;
+            case "5":
+                Environment.Exit(0);
+                break;
+            default:
+                Console.WriteLine("Invalid option. Please try again.");
+                break;
+        }
+    }
+
     private static async Task SearchProducts()
     {
         Console.Write("Enter search term: ");
         var searchTerm = Console.ReadLine()?.ToLower() ?? string.Empty;
-        var products = await _db.SearchProducts(searchTerm);
+        
+        var products = await _productService.SearchProducts(searchTerm);
+        DisplayProducts(products);
+    }
 
+    private static void DisplayProducts(List<Product> products)
+    {
         if (!products.Any())
         {
             Console.WriteLine("No products found.");
@@ -88,7 +104,6 @@ public class Program
     private static async Task RegisterSale()
     {
         var sale = new Sale();
-        var total = 0m;
         var transactionItems = new List<(string Name, int Quantity, decimal Price, decimal Subtotal)>();
 
         while (true)
@@ -97,8 +112,7 @@ public class Program
             var productName = Console.ReadLine();
             if (productName?.ToLower() == "done") break;
 
-            var product = await _db.GetProductByName(productName ?? string.Empty);
-            if (product == null)
+            if (!await _productService.ValidateProductExists(productName ?? string.Empty))
             {
                 Console.WriteLine("Product not found.");
                 continue;
@@ -111,11 +125,14 @@ public class Program
                 continue;
             }
 
-            if (quantity > product.StockQuantity)
+            if (!await _productService.ValidateStockAvailability(productName ?? string.Empty, quantity))
             {
                 Console.WriteLine("Insufficient stock.");
                 continue;
             }
+
+            var product = await _productService.GetProductByName(productName ?? string.Empty);
+            if (product == null) continue;
 
             var subtotal = product.Price * quantity;
             transactionItems.Add((product.Name, quantity, product.Price, subtotal));
@@ -128,9 +145,6 @@ public class Program
             };
 
             sale.Items.Add(item);
-            total += subtotal;
-
-            await _db.UpdateProductStock(product.Name, -quantity);
         }
 
         if (!sale.Items.Any())
@@ -139,12 +153,18 @@ public class Program
             return;
         }
 
-        // Display transaction summary
+        DisplayTransactionSummary(transactionItems);
+        var saleId = await _saleService.CreateSale(sale);
+        Console.WriteLine($"\nSale registered successfully. Sale ID: {saleId}");
+    }
+
+    private static void DisplayTransactionSummary(List<(string Name, int Quantity, decimal Price, decimal Subtotal)> items)
+    {
         Console.WriteLine("\nTransaction Summary:");
         Console.WriteLine("===================");
         Console.WriteLine($"Date: {DateTime.Now:g}");
         Console.WriteLine("\nItems:");
-        foreach (var item in transactionItems)
+        foreach (var item in items)
         {
             Console.WriteLine($"- {item.Name}");
             Console.WriteLine($"  Quantity: {item.Quantity}");
@@ -152,18 +172,14 @@ public class Program
             Console.WriteLine($"  Subtotal: ${item.Subtotal:F2}");
             Console.WriteLine();
         }
-        Console.WriteLine($"Total: ${total:F2}");
+        Console.WriteLine($"Total: ${items.Sum(i => i.Subtotal):F2}");
         Console.WriteLine("===================");
-
-        sale.Total = total;
-        var saleId = await _db.CreateSale(sale);
-        Console.WriteLine($"\nSale registered successfully. Sale ID: {saleId}");
     }
 
     private static async Task CancelSale()
     {
         Console.WriteLine("\nRecent Sales:");
-        var recentSales = await _db.GetRecentSales();
+        var recentSales = await _saleService.GetRecentSales();
 
         if (!recentSales.Any())
         {
@@ -171,10 +187,23 @@ public class Program
             return;
         }
 
-        // Display recent sales with numbers
-        for (int i = 0; i < recentSales.Count; i++)
+        DisplayRecentSales(recentSales);
+        var choice = GetSaleChoice(recentSales.Count);
+
+        if (choice == 0) return;
+
+        var selectedSale = recentSales[choice - 1];
+        if (!ConfirmSaleCancellation(selectedSale)) return;
+
+        var success = await _saleService.CancelSale(selectedSale.Id);
+        DisplayCancellationResult(success);
+    }
+
+    private static void DisplayRecentSales(List<Sale> sales)
+    {
+        for (int i = 0; i < sales.Count; i++)
         {
-            var sale = recentSales[i];
+            var sale = sales[i];
             Console.WriteLine($"\n{i + 1}. Sale ID: {sale.Id}");
             Console.WriteLine($"   Date: {sale.Date:g}");
             Console.WriteLine($"   Total: ${sale.Total:F2}");
@@ -184,31 +213,29 @@ public class Program
                 Console.WriteLine($"   - {item.ProductName}: {item.Quantity} x ${item.Price:F2}");
             }
         }
+    }
 
+    private static int GetSaleChoice(int maxSales)
+    {
         Console.Write("\nEnter the number of the sale to cancel (or 0 to go back): ");
-        if (!int.TryParse(Console.ReadLine(), out var choice) || choice < 0 || choice > recentSales.Count)
+        if (!int.TryParse(Console.ReadLine(), out var choice) || choice < 0 || choice > maxSales)
         {
             Console.WriteLine("Invalid selection.");
-            return;
+            return 0;
         }
+        return choice;
+    }
 
-        if (choice == 0)
-        {
-            return;
-        }
-
-        var selectedSale = recentSales[choice - 1];
+    private static bool ConfirmSaleCancellation(Sale sale)
+    {
         Console.WriteLine($"\nAre you sure you want to cancel this sale?");
-        Console.WriteLine($"Total: ${selectedSale.Total:F2}");
+        Console.WriteLine($"Total: ${sale.Total:F2}");
         Console.Write("Enter 'yes' to confirm: ");
+        return Console.ReadLine()?.ToLower() == "yes";
+    }
 
-        if (Console.ReadLine()?.ToLower() != "yes")
-        {
-            Console.WriteLine("Cancellation aborted.");
-            return;
-        }
-
-        var success = await _db.CancelSale(selectedSale.Id);
+    private static void DisplayCancellationResult(bool success)
+    {
         if (success)
         {
             Console.WriteLine("Sale cancelled successfully.");
@@ -222,12 +249,7 @@ public class Program
 
     private static async Task CheckStock()
     {
-        var products = await _db.GetAllProducts();
-        foreach (var product in products)
-        {
-            Console.WriteLine($"Name: {product.Name}");
-            Console.WriteLine($"Stock: {product.StockQuantity}");
-            Console.WriteLine();
-        }
+        var products = await _productService.GetAllProducts();
+        DisplayProducts(products);
     }
 }

@@ -1,115 +1,110 @@
-# Corner Shop
+# Corner Shop Management System
 
-A modern, console-based shop management system built with .NET 8 and MongoDB, featuring clean architecture, containerization, and comprehensive documentation.
+A simple console application for managing a corner shop's inventory and sales using MongoDB.
 
-## Features
+## Architecture
 
-- Product Management: search, view, and update products
-- Sales Management: register, view, and cancel sales
-- Inventory tracking and real-time stock updates
-- MongoDB integration for data persistence
+The application follows a 2-tier architecture:
 
-## Prerequisites
+1. **Presentation Layer**
+   - Handles user interface and input/output
+   - Located in `Program.cs`
+   - Manages user interactions and display formatting
 
-- .NET 8 SDK
-- Docker & Docker Compose (for containerized deployment)
-- MongoDB (if running locally without Docker)
+2. **Business Layer**
+   - Contains business logic and rules
+   - Located in `Services/` directory
+   - Handles data validation and business operations
+   - Key components:
+     - `IProductService` and `ProductService`: Product-related operations
+     - `ISaleService` and `SaleService`: Sale-related operations
 
-## Getting Started
-
-### Local Development
-
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/yourusername/corner-shop.git
-   cd corner-shop
-   ```
-2. Restore dependencies:
-   ```bash
-   dotnet restore
-   ```
-3. Build the project:
-   ```bash
-   dotnet build
-   ```
-4. Start MongoDB (if not using Docker Compose):
-   ```bash
-   # Ensure MongoDB is running on localhost:27017
-   ```
-5. Run the application:
-   ```bash
-   dotnet run --project CornerShop
-   ```
-
-### Running Tests
-
-```bash
-dotnet test
-```
-
-### Docker Deployment
-
-1. Build and run with Docker Compose:
-   ```bash
-   docker-compose up --build
-   ```
-2. The application will connect to the MongoDB service defined in `docker-compose.yml`.
+3. **Data Layer**
+   - Manages data persistence
+   - Located in `Services/DatabaseService.cs`
+   - Handles all MongoDB operations
+   - Implements `IDatabaseService` interface
 
 ## Project Structure
 
 ```
 CornerShop/
-├── CornerShop/             # Main application project
-│   ├── Models/             # Data models
-│   ├── Services/           # Business logic and services
-│   └── Program.cs          # Application entry point
-├── CornerShop.Tests/       # Unit tests
-├── docker-compose.yml      # Docker configuration
-├── Dockerfile              # Application containerization
-├── docs/                   # Technical documentation
-│   ├── README.md           # Technical documentation & setup
-│   ├── ADR/                # Architecture Decision Records
-│   └── UML/                # UML diagrams (4+1 views)
+├── Models/
+│   ├── Product.cs
+│   ├── Sale.cs
+│   └── SaleItem.cs
+├── Services/
+│   ├── IDatabaseService.cs
+│   ├── DatabaseService.cs
+│   ├── IProductService.cs
+│   ├── ProductService.cs
+│   ├── ISaleService.cs
+│   └── SaleService.cs
+└── Program.cs
 ```
 
-## Documentation
+## Features
 
-- **Technical documentation** is located in the [`docs/`](docs/) directory.
-  - [docs/README.md](docs/README.md): Setup, usage, technology choices, and justifications
-  - [docs/ADR/](docs/ADR/): Architecture Decision Records (ADRs)
-  - [docs/UML/](docs/UML/): UML diagrams for all 4+1 architectural views
+- Product management
+  - Search products
+  - Check stock levels
+  - Update inventory
+- Sales management
+  - Register new sales
+  - Cancel sales
+  - View recent sales
+- Automatic stock updates
+- Transaction summaries
 
-### UML Diagrams (4+1 Views)
-- Logical View: `docs/UML/logical-view.puml`
-- Development View: `docs/UML/development-view.puml`
-- Process View: `docs/UML/process-view.puml`
-- Physical View: `docs/UML/physical-view.puml`
-- Use Case/Sequence: `docs/UML/sale-sequence.puml`
+## Prerequisites
 
-### Architecture Decisions
-- See `docs/ADR/` for detailed ADRs on database choice, architecture, testing, and error handling.
+- .NET 6.0 or later
+- MongoDB server running locally on port 27017
 
-## Development Practices
-- C# 8.0 features, async/await, interface-based design
-- Unit tests with xUnit and Moq
-- Code formatting enforced via `.editorconfig` and `dotnet format`
-- CI/CD with GitHub Actions: linting, testing, coverage, Docker build
+## Getting Started
 
-## Contributing
-1. Fork the repository
-2. Create a feature branch
-3. Commit your changes
-4. Push to the branch
-5. Create a Pull Request
+1. Clone the repository
+2. Ensure MongoDB is running locally
+3. Navigate to the project directory
+4. Run the application:
+   ```bash
+   dotnet run
+   ```
+
+## Usage
+
+The application provides a menu-driven interface:
+
+1. Search Products
+   - Search by product name or category
+   - View product details and stock levels
+
+2. Register Sale
+   - Add multiple items to a sale
+   - Automatic stock updates
+   - Transaction summary
+
+3. Cancel Sale
+   - View recent sales
+   - Select sale to cancel
+   - Automatic stock restoration
+
+4. Check Stock
+   - View all products and their current stock levels
+
+## Error Handling
+
+The application includes comprehensive error handling:
+- Input validation
+- Business rule enforcement
+- Database operation error handling
+- User-friendly error messages
+
+## Dependencies
+
+- MongoDB.Driver (2.22.0)
+- MongoDB.Bson (2.22.0)
 
 ## License
-This project is created for educational purposes.
 
-## Author
-- Course: LOG430 - Architecture Logicielle
-- Student: Minjae Lee [LEEM29379701]
-
-## Acknowledgments
-- MongoDB for the database
-- .NET team for the framework
-- xUnit for testing framework
+This project is licensed under the MIT License - see the LICENSE file for details.
