@@ -1,108 +1,171 @@
-# Architecture Documentation
+# Corner Shop Management System - Architecture Documentation
 
-## System Overview
+## 1. Introduction and Goals
 
-The Corner Shop Management System follows a 3-tier architecture with dual database support:
+### 1.1 Requirements Overview
+- Point-of-sale system for corner shop management
+- Support for product and sale management
+- Dual database system for data persistence
+- Console-based user interface
+- Support for concurrent operations
 
-1. **Presentation Layer**
-   - Handles user interface and input/output
-   - Located in `Program.cs`
-   - Manages user interactions and display formatting
-   - Provides clear menu navigation and feedback
+### 1.2 Quality Goals
+- High availability and reliability
+- Data consistency across databases
+- Fast response times for operations
+- Easy maintenance and extensibility
+- Clear error handling and user feedback
 
-2. **Business Layer**
-   - Contains business logic and rules
-   - Located in `Services/` directory
-   - Handles data validation and business operations
-   - Key components:
-     - `IProductService` and `ProductService`: Product-related operations
-     - `ISaleService` and `SaleService`: Sale-related operations
-     - `ISyncService` and `SyncService`: Database synchronization
+### 1.3 Stakeholders
+- Shop owners/managers
+- Cashiers
+- System administrators
+- Developers
 
-3. **Data Layer**
-   - Manages data persistence
-   - Supports two database implementations:
-     - MongoDB: Document-based storage
-     - Entity Framework Core: Relational storage with SQLite
-   - Implements `IDatabaseService` interface
-   - Handles data synchronization between databases
+## 2. Architecture Constraints
 
-## Database Architecture
+### 2.1 Technical Constraints
+- .NET Core 6.0 platform
+- Console-based interface
+- Docker containerization
+- Dual database system (MongoDB and SQLite)
 
-### MongoDB Implementation
-- Document-based storage
-- Collections for Products and Sales
-- BSON serialization for data storage
-- ObjectId for document identification
+### 2.2 Organizational Constraints
+- Development team size
+- Time constraints
+- Budget limitations
+- Training requirements
 
-### Entity Framework Core Implementation
-- Relational storage using SQLite
-- Entity models with data annotations
-- Automatic database creation and migration
-- LINQ queries for data access
+## 3. System Scope and Context
 
-### Database Synchronization
-- Bidirectional sync between MongoDB and EF Core
-- Automatic sync after critical operations
-- Manual sync option
-- Conflict resolution strategy
+### 3.1 Business Context
+- Corner shop operations
+- Point-of-sale transactions
+- Inventory management
+- Sales tracking
 
-## Project Structure
+### 3.2 Technical Context
+- Development environment
+- Production environment
+- Database systems
+- Container orchestration
 
-```
-CornerShop/
-├── Models/
-│   ├── Product.cs
-│   ├── Sale.cs
-│   └── SaleItem.cs
-├── Services/
-│   ├── IDatabaseService.cs
-│   ├── MongoDatabaseService.cs
-│   ├── EfDatabaseService.cs
-│   ├── IProductService.cs
-│   ├── ProductService.cs
-│   ├── ISaleService.cs
-│   ├── SaleService.cs
-│   ├── ISyncService.cs
-│   └── SyncService.cs
-└── Program.cs
-```
+## 4. Solution Strategy
 
-## Key Components
+### 4.1 Architecture Overview
+The system follows a 3-tier architecture:
+1. **Presentation Layer**: Console interface
+2. **Business Layer**: Service implementations
+3. **Data Layer**: Database services
 
-### Models
-- `Product`: Represents a product with properties like name, price, and stock
-- `Sale`: Represents a sale transaction with items and total
-- `SaleItem`: Represents an item in a sale with product and quantity
+### 4.2 Technology Decisions
+- .NET Core for cross-platform support
+- MongoDB for document storage
+- Entity Framework Core for relational storage
+- Docker for containerization
 
-### Services
-- `IDatabaseService`: Interface for database operations
-- `MongoDatabaseService`: MongoDB implementation
-- `EfDatabaseService`: Entity Framework Core implementation
-- `IProductService`: Interface for product operations
-- `ProductService`: Product business logic
-- `ISaleService`: Interface for sale operations
-- `SaleService`: Sale business logic
-- `ISyncService`: Interface for database synchronization
-- `SyncService`: Synchronization logic
+## 5. Building Block View
 
-## Data Flow
+### 5.1 Whitebox Overall System
+See [Logical View](UML/logical-view.puml) for the high-level system structure.
 
-1. **User Input**
-   - User interacts with the console interface
-   - Input validation and error handling
+### 5.2 Level 2
+#### 5.2.1 Presentation Layer
+- Program.cs: Main application entry point
+- User interface handling
+- Input validation
+- Output formatting
 
-2. **Business Logic**
-   - Service layer processes requests
-   - Business rules enforcement
-   - Data validation
+#### 5.2.2 Business Layer
+- ProductService: Product management
+- SaleService: Sale processing
+- SyncService: Database synchronization
 
-3. **Data Persistence**
-   - Primary database operation
-   - Automatic synchronization
-   - Error handling and recovery
+#### 5.2.3 Data Layer
+- MongoDatabaseService: MongoDB implementation
+- EfDatabaseService: Entity Framework implementation
 
-4. **User Feedback**
-   - Operation results
-   - Error messages
-   - Confirmation prompts 
+### 5.3 Level 3
+See [Class Diagram](UML/class-diagram.puml) for detailed component relationships.
+
+## 6. Runtime View
+
+### 6.1 Runtime Scenarios
+See [Process View](UML/process-view.puml) for runtime interactions.
+
+### 6.2 Key Processes
+1. Product Search
+2. Sale Creation
+3. Database Synchronization
+4. Stock Management
+
+## 7. Deployment View
+
+### 7.1 Infrastructure
+See [Physical View](UML/physical-view.puml) for deployment architecture.
+
+### 7.2 Containers
+- Application container
+- MongoDB container
+- SQLite database file
+
+## 8. Cross-cutting Concepts
+
+### 8.1 Security
+- Input validation
+- Data sanitization
+- Error handling
+
+### 8.2 Performance
+- Database indexing
+- Caching strategies
+- Concurrent operations
+
+### 8.3 Scalability
+- Container orchestration
+- Database synchronization
+- Load balancing
+
+## 9. Architecture Decisions
+
+See [Architecture Decision Records](ADR/) for detailed decisions:
+- [Database Architecture](ADR/001-database-architecture.md)
+- [Separation of Responsibilities](ADR/002-separation-of-responsibilities.md)
+- [Platform Choice](ADR/001-platform-choice.md)
+
+## 10. Quality Requirements
+
+### 10.1 Performance
+- Response time < 1 second for operations
+- Support for 3 concurrent registers
+- Efficient database queries
+
+### 10.2 Reliability
+- Data consistency across databases
+- Automatic error recovery
+- Transaction management
+
+### 10.3 Maintainability
+- Clear code organization
+- Comprehensive documentation
+- Automated testing
+
+## 11. Risks and Technical Debt
+
+### 11.1 Identified Risks
+- Database synchronization conflicts
+- Concurrent operation handling
+- Data consistency maintenance
+
+### 11.2 Technical Debt
+- Additional test coverage needed
+- Performance optimization opportunities
+- Documentation updates
+
+## 12. Glossary
+
+- **ORM**: Object-Relational Mapping
+- **POS**: Point of Sale
+- **EF Core**: Entity Framework Core
+- **BSON**: Binary JSON
+- **LINQ**: Language Integrated Query 

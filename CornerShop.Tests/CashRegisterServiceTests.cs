@@ -91,8 +91,32 @@ namespace CornerShop.Tests
             var registerId = 0;
             var saleId = "test-sale";
 
+            // Set up the active sale for the register
+            var sale = new Sale
+            {
+                Id = saleId,
+                Date = DateTime.UtcNow,
+                Items = new List<SaleItem>
+                {
+                    new SaleItem { ProductName = "Test Product", Quantity = 1 }
+                }
+            };
+
+            // Create a sale first to set up the active sale
+            _mockProductService
+                .Setup(x => x.ValidateStockAvailability(It.IsAny<string>(), It.IsAny<int>()))
+                .ReturnsAsync(true);
+
             _mockSaleService
-                .Setup(x => x.CancelSale(It.IsAny<string>()))
+                .Setup(x => x.CreateSale(It.IsAny<Sale>()))
+                .ReturnsAsync(saleId);
+
+            await _cashRegisterService.CreateSaleOnRegister(registerId, sale);
+            await _cashRegisterService.UnlockRegister(registerId); // Unlock the register after creating the sale
+
+            // Now set up the cancel sale mock
+            _mockSaleService
+                .Setup(x => x.CancelSale(saleId))
                 .ReturnsAsync(true);
 
             // Act
