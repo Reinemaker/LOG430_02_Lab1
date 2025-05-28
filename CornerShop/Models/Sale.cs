@@ -7,31 +7,22 @@ public class Sale
 {
     [BsonId]
     [BsonRepresentation(BsonType.ObjectId)]
-    public string Id { get; set; } = string.Empty;
+    public string Id { get; set; } = ObjectId.GenerateNewId().ToString();
 
     [BsonElement("date")]
-    public DateTime Date { get; set; }
+    public DateTime Date { get; set; } = DateTime.UtcNow;
 
     [BsonElement("items")]
-    public List<SaleItem> Items { get; set; } = new();
+    public List<SaleItem> Items { get; set; } = new List<SaleItem>();
 
     [BsonElement("total")]
     public decimal Total { get; set; }
+
+    [BsonElement("isCancelled")]
+    public bool IsCancelled { get; set; }
 
     public Sale()
     {
         Date = DateTime.UtcNow;
     }
-}
-
-public class SaleItem
-{
-    [BsonElement("productName")]
-    public string ProductName { get; set; } = string.Empty;
-
-    [BsonElement("quantity")]
-    public int Quantity { get; set; }
-
-    [BsonElement("price")]
-    public decimal Price { get; set; }
 }

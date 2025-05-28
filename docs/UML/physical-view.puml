@@ -8,6 +8,8 @@ node "Application Server" {
 node "Database Server" {
     [MongoDB]
     [MongoDB Data Files]
+    [SQLite Database]
+    [SQLite Data Files]
 }
 
 cloud "Docker Environment" {
@@ -19,6 +21,8 @@ cloud "Docker Environment" {
 [.NET Runtime] --> [Docker Container]
 [Docker Container] --> [Docker Network]
 [Docker Network] --> [MongoDB]
+[Docker Network] --> [SQLite Database]
 [MongoDB] --> [MongoDB Data Files]
+[SQLite Database] --> [SQLite Data Files]
 
 @enduml 

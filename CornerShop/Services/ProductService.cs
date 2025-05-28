@@ -56,4 +56,4 @@ namespace CornerShop.Services
             return product.StockQuantity >= quantity;
         }
     }
-} 
+}

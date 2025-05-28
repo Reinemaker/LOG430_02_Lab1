@@ -1,4 +1,4 @@
-# ADR 004: Error Handling Strategy
+# ADR 003: Error Handling Strategy
 
 ## Status
 Accepted

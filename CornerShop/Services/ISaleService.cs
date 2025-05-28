@@ -11,4 +11,4 @@ namespace CornerShop.Services
         Task<decimal> CalculateSaleTotal(List<SaleItem> items);
         Task<bool> ValidateSaleItems(List<SaleItem> items);
     }
-} 
+}

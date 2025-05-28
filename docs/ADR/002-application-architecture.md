@@ -1,4 +1,4 @@
-# ADR 002: Application Architecture
+# ADR 001: Application Architecture
 
 ## Status
 Accepted

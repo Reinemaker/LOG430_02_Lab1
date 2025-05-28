@@ -36,83 +36,14 @@ public class DatabaseService : IDatabaseService
 
     public async Task InitializeDatabase()
     {
-        // Check if we already have products
-        var existingProducts = await _products.Find(_ => true).ToListAsync();
-        if (existingProducts.Any())
-        {
-            Console.WriteLine("Database already contains products.");
-            return;
-        }
+        // Create indexes
+        var productIndexKeys = Builders<Product>.IndexKeys.Ascending(p => p.Name);
+        var productIndexModel = new CreateIndexModel<Product>(productIndexKeys);
+        await _products.Indexes.CreateOneAsync(productIndexModel);
 
-        var sampleProducts = new List<Product>
-        {
-            new Product
-            {
-                Name = "Laptop",
-                Category = "Electronics",
-                Price = 999.99m,
-                StockQuantity = 10
-            },
-            new Product
-            {
-                Name = "Smartphone",
-                Category = "Electronics",
-                Price = 499.99m,
-                StockQuantity = 20
-            },
-            new Product
-            {
-                Name = "Headphones",
-                Category = "Electronics",
-                Price = 79.99m,
-                StockQuantity = 50
-            },
-            new Product
-            {
-                Name = "Coffee Maker",
-                Category = "Appliances",
-                Price = 49.99m,
-                StockQuantity = 15
-            },
-            new Product
-            {
-                Name = "Desk Chair",
-                Category = "Furniture",
-                Price = 129.99m,
-                StockQuantity = 8
-            },
-            new Product
-            {
-                Name = "Apple",
-                Category = "Fruits",
-                Price = 1.99m,
-                StockQuantity = 100
-            },
-            new Product
-            {
-                Name = "Banana",
-                Category = "Fruits",
-                Price = 0.99m,
-                StockQuantity = 100
-            },
-            new Product
-            {
-                Name = "Orange",
-                Category = "Fruits",
-                Price = 0.99m,
-                StockQuantity = 100
-            },
-            new Product
-            {
-                Name = "Pineapple",
-                Category = "Fruits",
-                Price = 1.99m,
-                StockQuantity = 100
-            }
-        };
-
-        await _products.InsertManyAsync(sampleProducts);
-        Console.WriteLine("Sample products added to database.");
+        var saleIndexKeys = Builders<Sale>.IndexKeys.Ascending(s => s.Date);
+        var saleIndexModel = new CreateIndexModel<Sale>(saleIndexKeys);
+        await _sales.Indexes.CreateOneAsync(saleIndexModel);
     }
 
     public async Task<List<Product>> SearchProducts(string searchTerm)
@@ -125,58 +56,52 @@ public class DatabaseService : IDatabaseService
 
     public async Task<Product?> GetProductByName(string name)
     {
-        var filter = Builders<Product>.Filter.Regex(p => p.Name,
-            new MongoDB.Bson.BsonRegularExpression($"^{name}$", "i"));
-        var cursor = await _products.FindAsync(filter);
-        return await cursor.FirstOrDefaultAsync();
+        var filter = Builders<Product>.Filter.Eq(p => p.Name, name);
+        return await _products.Find(filter).FirstOrDefaultAsync();
     }
 
     public async Task<bool> UpdateProductStock(string productName, int quantity)
     {
         var filter = Builders<Product>.Filter.Eq(p => p.Name, productName);
-        var update = Builders<Product>.Update.Inc(p => p.StockQuantity, quantity);
+        var update = Builders<Product>.Update.Inc(p => p.StockQuantity, -quantity);
         var result = await _products.UpdateOneAsync(filter, update);
         return result.ModifiedCount > 0;
     }
 
     public async Task<string> CreateSale(Sale sale)
     {
-        if (string.IsNullOrEmpty(sale.Id))
-        {
-            sale.Id = ObjectId.GenerateNewId().ToString();
-        }
         await _sales.InsertOneAsync(sale);
         return sale.Id;
     }
 
     public async Task<List<Sale>> GetRecentSales(int limit = 10)
     {
-        return await _sales.Find(_ => true)
-            .Sort(Builders<Sale>.Sort.Descending(s => s.Date))
-            .Limit(limit)
-            .ToListAsync();
+        var filter = Builders<Sale>.Filter.Empty;
+        var sort = Builders<Sale>.Sort.Descending(s => s.Date);
+        return await _sales.Find(filter).Sort(sort).Limit(limit).ToListAsync();
     }
 
-    public async Task<Sale?> GetSaleById(string id)
+    public async Task<Sale?> GetSaleById(string saleId)
     {
-        var filter = Builders<Sale>.Filter.Eq(s => s.Id, id);
-        var cursor = await _sales.FindAsync(filter);
-        return await cursor.FirstOrDefaultAsync();
+        var filter = Builders<Sale>.Filter.Eq(s => s.Id, saleId);
+        return await _sales.Find(filter).FirstOrDefaultAsync();
     }
 
     public async Task<bool> CancelSale(string saleId)
     {
-        var sale = await GetSaleById(saleId);
+        var filter = Builders<Sale>.Filter.Eq(s => s.Id, saleId);
+        var sale = await _sales.Find(filter).FirstOrDefaultAsync();
+
         if (sale == null) return false;
 
+        // Restore stock for each item
         foreach (var item in sale.Items)
         {
-            await UpdateProductStock(item.ProductName, item.Quantity);
+            await UpdateProductStock(item.ProductName, -item.Quantity);
         }
 
-        var filter = Builders<Sale>.Filter.Eq(s => s.Id, saleId);
-        var result = await _sales.DeleteOneAsync(filter);
-        return result.DeletedCount > 0;
+        var deleteResult = await _sales.DeleteOneAsync(filter);
+        return deleteResult.DeletedCount > 0;
     }
 
     public async Task<List<Product>> GetAllProducts()
@@ -192,5 +117,10 @@ public class DatabaseService : IDatabaseService
             Console.WriteLine($"Product: {product.Name}");
             Console.WriteLine();
         }
+    }
+
+    public async Task CreateProduct(Product product)
+    {
+        await _products.InsertOneAsync(product);
     }
 }

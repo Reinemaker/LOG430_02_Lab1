@@ -15,4 +15,5 @@ public interface IDatabaseService
     Task<List<Sale>> GetRecentSales(int limit = 10);
     Task<Sale?> GetSaleById(string id);
     Task<bool> CancelSale(string saleId);
+    Task CreateProduct(Product product);
 }

@@ -16,6 +16,12 @@ interface IDatabaseService {
     +GetAllProducts(): List<Product>
 }
 
+interface ISyncService {
+    +SyncDatabases(): Task
+    +SyncProducts(): Task
+    +SyncSales(): Task
+}
+
 ' Classes
 class DatabaseService {
     -_database: IMongoDatabase
@@ -31,9 +37,18 @@ class DatabaseService {
     +GetAllProducts(): List<Product>
 }
 
+class SyncService {
+    -_mongoService: IDatabaseService
+    -_efService: IDatabaseService
+    +SyncDatabases(): Task
+    +SyncProducts(): Task
+    +SyncSales(): Task
+}
+
 class Product {
     +Id: ObjectId
     +Name: string
+    +Category: string
     +Price: decimal
     +Stock: int
     +Description: string
@@ -45,6 +60,7 @@ class Sale {
     +Total: decimal
     +Date: DateTime
     +Status: SaleStatus
+    +IsCancelled: bool
 }
 
 class SaleItem {
@@ -55,8 +71,10 @@ class SaleItem {
 
 ' Relationships
 IDatabaseService <|.. DatabaseService
+ISyncService <|.. SyncService
 DatabaseService --> Product: manages
 DatabaseService --> Sale: manages
 Sale --> SaleItem: contains
+SyncService --> IDatabaseService: uses
 
 @enduml 

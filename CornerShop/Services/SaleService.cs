@@ -72,10 +72,7 @@ namespace CornerShop.Services
             decimal total = 0;
             foreach (var item in items)
             {
-                var product = await _productService.GetProductByName(item.ProductName);
-                if (product == null)
-                    throw new InvalidOperationException($"Product {item.ProductName} not found");
-
+                var product = await _productService.GetProductByName(item.ProductName) ?? throw new InvalidOperationException($"Product {item.ProductName} not found");
                 total += product.Price * item.Quantity;
             }
             return total;
@@ -98,4 +95,4 @@ namespace CornerShop.Services
             return true;
         }
     }
-} 
+}

@@ -11,4 +11,4 @@ namespace CornerShop.Services
         Task<bool> ValidateProductExists(string productName);
         Task<bool> ValidateStockAvailability(string productName, int quantity);
     }
-} 
+}
